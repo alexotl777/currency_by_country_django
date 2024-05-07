@@ -1,0 +1,103 @@
+<!DOCTYPE HTML>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <title>Form</title>
+</head>
+<body>
+    <div class="container main-form-rates">
+        <div class="row">
+            <div class="col-md-12 col-md-offset-4 col-sm-12 col-sm-offset-1">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <div class="text-center">
+                            <h2 class="text-center">Выбор дат и стран</h2>
+                            <p>Выбери интервал дат <= 2 лет<br>Через "Ctrl" 1 и более стран</p>
+                            <form id="register-form" role="form" autocomplete="off" class="form" action="{% url 'coutries_and_rates' %}" method="POST">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <div class="input-group">
+                                        <select class="form-control" id="countries" name="countries" multiple>
+                                            {% for country in countries %}
+                                                <option value="{{ country }}">{{ country }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="input-group">
+                                        <span class="input-group-addon"><i class="glyphicon glyphicon-envelope color-blue"></i></span>
+                                        <div>
+                                            <input id="inputDateLine" name="bd" placeholder="Начальный день" class="form-control"  type="text">
+                                        </div>
+                                        <div>
+                                            <input id="inputDateLine" name="bm" placeholder="Начальный месяц" class="form-control"  type="text">
+                                        </div>
+                                        <div>
+                                            <input id="inputDateLine" name="by" placeholder="Начальный год" class="form-control"  type="text">
+                                        </div>
+                                        <div>
+                                            <input id="inputDateLine" name="ed" placeholder="Конечный день" class="form-control"  type="text">
+                                        </div>
+                                        <div>
+                                            <input id="inputDateLine" name="em" placeholder="Конечный месяц" class="form-control"  type="text">
+                                        </div>
+                                        <div>
+                                            <input id="inputDateLine" name="ey" placeholder="Конечный год" class="form-control"  type="text">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <input name="btnSubmit" class="btn btn-lg btn-primary btn-block btnSubmit" value="Построить" type="submit">
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        body{
+            background:#fff1c6;
+        }
+        .forget-pwd > a{
+            color: #dc3545;
+            font-weight: 500;
+        }
+        .main-form-rates .panel-default{
+            padding: 31%;
+            margin-top: -27%;
+        }
+        .main-form-rates .panel-body{
+            padding: 15%;
+            margin-bottom: -50%;
+            background: #fff;
+            border-radius: 5px;
+            -webkit-box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        }
+        img{
+            width:40%;
+            margin-bottom:10%;
+        }
+        .btnSubmit{
+            background: #c0392b;
+            border:none;
+        }
+        .main-form-rates .dropdown{
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+        }
+        .main-form-rates .dropdown button{
+            width: 100%;
+        }
+        .main-form-rates .dropdown ul{
+            width: 100%;
+        }
+    </style>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</body>
