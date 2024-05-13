@@ -1,15 +1,16 @@
 import base64
-import datetime
 from io import BytesIO
+import datetime
+import pytz
 from django.http import Http404, JsonResponse
 from django.views.generic import TemplateView
 from django.shortcuts import redirect, render
+from .models import CountryCodes, CurrencyRates, CurrencyRateChange
 from bs4 import BeautifulSoup
-from matplotlib.dates import DayLocator
-import pytz
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.dates import DayLocator
 import matplotlib
 matplotlib.use('Agg')
 
@@ -19,20 +20,32 @@ matplotlib.use('Agg')
 class DateValidation:
     tz = pytz.timezone('Europe/Moscow')
 
-    def check_day(self, day):
+    def check_day(self, day: int) -> int:
+        '''
+        Takes: целочисленный день
         
+        Returns: целочисленный день, если он между 1 и 31, иначе вызывает ошибку
+        '''
         if day < 1 or day > 31:
             raise Http404("Day should be between 1 and 31")
         return day
 
-    def check_month(self, month):
+    def check_month(self, month: int) -> int:
+        '''
+        Takes: целочисленный месяц
         
+        Returns: целочисленный месяц, если он между 1 и 12, иначе вызывает ошибку
+        '''
         if month < 1 or month > 12:
             raise Http404("Month should be between 1 and 12")
         return month
 
-    def check_year(self, year):
+    def check_year(self, year: int) -> int:
+        '''
+        Takes: целочисленный месяц
         
+        Returns: целочисленный месяц, если он между 1 и 12, иначе вызывает ошибку
+        '''
         current_year = datetime.datetime.now(self.tz).date().year
         if year < 1 or year > current_year:
             raise Http404("Year should be a positive number not greater than the current year")
@@ -93,6 +106,21 @@ class GetterCurrencies:
         df = df[df['Код'] != '']
         dict_country_currency = df.to_dict()
 
+        try:
+            for id, row in df.iterrows():
+                codes_obj, created = CountryCodes.objects.update_or_create(
+                    country=row['Страна'],
+                    defaults={
+                        'currency': row['Валюта'],
+                        'code': row['Код'],
+                        'number': row['Номер'],
+                    }
+                )
+                codes_obj.save()
+
+        except BaseException as e:
+            print(f'Ошибка [get_currency_of_country] - {e}')
+
         return JsonResponse(dict_country_currency)
     
     def get_rates(request):
@@ -109,7 +137,9 @@ class GetterCurrencies:
             'https://www.finmarket.ru/currency/rates/?id=10148&pv=1#archive',
         )
 
-        soup = BeautifulSoup(response.content, "html.parser", from_encoding='utf-8')
+        soup = BeautifulSoup(response.content, 
+                             "html.parser", 
+                             from_encoding='utf-8')
 
         currency_codes = soup.find('select', 
                                 {'name': 'cur'}).find_all('option')
@@ -167,7 +197,38 @@ class GetterCurrencies:
 
         df = pd.DataFrame(course_to_rub)
 
-        df.to_excel('result.xlsx')
+        # Преобразуем столбец даты в формат даты и времени с помощью параметра format
+        df['Дата'] = pd.to_datetime(df['Дата'], format='%d.%m.%Y')
+
+        # Форматируем столбец даты в формат YYYY-MM-DD с помощью метода dt.strftime()
+        df['Дата'] = df['Дата'].dt.strftime('%Y-%m-%d')
+
+        # Сохранение полученных данных в базу данных
+        # Пример использования модели CurrencyRates:
+        try:
+            for id, row in df.iterrows():
+                rates_obj, created = CurrencyRates.objects.update_or_create(
+                    date=row['Дата'],
+                    defaults={
+                        'usd_currency': row['Доллар США'],
+                        'eur_currency': row['ЕВРО'],
+                        'gpb_currency': row['Фунт стерлингов'],
+                        'ikr_currency': row['Индийская рупия'],
+                        'cny_currency': row['Китайский юань Жэньминьби'],
+                        'try_currency': row['Турецкая лира'],
+                        'jpy_currency': row['Японская йена'],
+                    }
+                )
+                rates_obj.save()
+
+            # Определение базовой даты
+            print(df['Дата'][0])
+            base_date = datetime.datetime.strptime(df['Дата'][0], '%Y-%m-%d').date()
+
+            # Вычисление относительных изменений
+            CurrencyRates.calculate_relative_changes(base_date=base_date)
+        except BaseException as e:
+            print(f'Ошибка [get_rates] - {e}')
 
         return JsonResponse(course_to_rub)
     
@@ -188,7 +249,6 @@ class GetterCurrencies:
 
         date_validator.check_interval(bd, bm, by,
                                       ed, em, ey)
-        print(bd, bm, by, ed, em, ey)
 
         selected_countries = request.POST.getlist('countries')
         # Теперь selected_countries содержит список выбранных стран
@@ -199,14 +259,11 @@ class GetterCurrencies:
         df_contries_currency = df_contries_currency[
             df_contries_currency["Страна"].isin(selected_countries)
             ]
-        print(df_contries_currency)
         
         rates_currencies_to_rub = requests.get(f"http://127.0.0.1:8000/api/GET/currency-rates/?bd={bd}&bm={bm}&by={by}&ed={ed}&em={em}&ey={ey}")
         json_content_rates = rates_currencies_to_rub.json()
         df_rates_currency = pd.DataFrame(json_content_rates)
         # print([[df_rates_currency[currency_name[currency]]] for currency in df_contries_currency['Код']])
-
-        print(df_rates_currency)
 
         # Создадим подграфики для каждой страны
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -231,7 +288,6 @@ class GetterCurrencies:
                 continue
 
             currency_code = currency_code[0]
-            print(currency_code[0])
             
             # Фильтруем данные из второго датафрейма по коду валюты
             filtered_data = df_rates_currency[['Дата', trans_codes[currency_code]]].copy()
@@ -244,7 +300,7 @@ class GetterCurrencies:
             
             # Строим график для каждой страны
             ax.plot(filtered_data['Дата'], filtered_data['Относительное изменение'], label=country)
-        print(filtered_data)
+
         # Добавляем подписи к осям и заголовок
         ax.set_xlabel('Дата')
         ax.set_ylabel('Относительное изменение курса (%)')
