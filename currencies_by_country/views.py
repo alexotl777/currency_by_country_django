@@ -5,6 +5,8 @@ import pytz
 from django.http import Http404, JsonResponse
 from django.views.generic import TemplateView
 from django.shortcuts import redirect, render
+
+from currencies.settings import ALLOWED_HOSTS
 from .models import CountryCodes, CurrencyRates, CurrencyRateChange
 from bs4 import BeautifulSoup
 import requests
@@ -51,7 +53,15 @@ class DateValidation:
             raise Http404("Year should be a positive number not greater than the current year")
         return year
     
-    def check_all_date(self, day, month, year):
+    def check_all_date(self, day: int, month: int, year: int):
+        '''
+        Takes: целочисленный день, месяц, год
+        
+        Returns: None
+
+        Проверяет дату на ее существование и больше ли она текущей даты, 
+        иначе возвращает ошибку
+        '''
         try:
             date = datetime.date(year, month, day)
         except ValueError:
@@ -59,9 +69,16 @@ class DateValidation:
         if date > datetime.datetime.now(self.tz).date():
             raise Http404("Input date greater then now date")
         
-    def check_interval(self, day_start, month_start, year_start,
-                       day_end, month_end, year_end):
+    def check_interval(self, day_start: int, month_start: int, year_start: int,
+                       day_end: int, month_end: int, year_end: int):
+        '''
+        Takes: целочисленный день, месяц, год дат начала и конца интервала
         
+        Returns: None
+
+        Проверяет, находится ли интервал от 0 до 2 лет, 
+        иначе возвращает ошибку
+        '''
         start_date = datetime.date(year_start, month_start, day_start)
         end_date = datetime.date(year_end, month_end, day_end)
 
@@ -74,10 +91,17 @@ class GetterCurrencies:
 
     
     def redirect_to_main(request):
+        '''
+        Перенаправляет с базового роута на главную страницу с формой
+        '''
         return redirect("main/")
     
 
     def get_currency_of_country(request) -> pd.DataFrame:
+        '''
+        Собирает с iban.ru информацию о кодах валют стран 
+        и синхранизирует их в БД в таблице CountryCodes
+        '''
         response = requests.get(
             'https://www.iban.ru/currency-codes',
         )
@@ -124,6 +148,10 @@ class GetterCurrencies:
         return JsonResponse(dict_country_currency)
     
     def get_rates(request):
+        '''
+        Собирает с finmarket.ru информацию о курсах валют 
+        и синхранизирует их в БД в таблице CountryCodes
+        '''
         
         bd = int(request.GET.get('bd'))
         bm = int(request.GET.get('bm'))
@@ -222,7 +250,6 @@ class GetterCurrencies:
                 rates_obj.save()
 
             # Определение базовой даты
-            print(df['Дата'][0])
             base_date = datetime.datetime.strptime(df['Дата'][0], '%Y-%m-%d').date()
 
             # Вычисление относительных изменений
@@ -234,7 +261,10 @@ class GetterCurrencies:
     
 
     def get_countries_rates(request):
-
+        '''
+        Запрашивает коды и курсы валют, расчитывает относительные изменения курсов
+        за определенный период с определенным списком стран и строит по этому график
+        '''
         date_validator = DateValidation()
 
         bd = date_validator.check_day(int(request.POST.get('bd')))
@@ -253,14 +283,14 @@ class GetterCurrencies:
         selected_countries = request.POST.getlist('countries')
         # Теперь selected_countries содержит список выбранных стран
 
-        country_currencies = requests.get("http://127.0.0.1:8000/api/GET/country-currency/")
+        country_currencies = requests.get(f"http://{ALLOWED_HOSTS[0]}:8000/api/GET/country-currency/")
         json_content_countries = country_currencies.json()
         df_contries_currency = pd.DataFrame(json_content_countries)
         df_contries_currency = df_contries_currency[
             df_contries_currency["Страна"].isin(selected_countries)
             ]
         
-        rates_currencies_to_rub = requests.get(f"http://127.0.0.1:8000/api/GET/currency-rates/?bd={bd}&bm={bm}&by={by}&ed={ed}&em={em}&ey={ey}")
+        rates_currencies_to_rub = requests.get(f"http://{ALLOWED_HOSTS[0]}:8000/api/GET/currency-rates/?bd={bd}&bm={bm}&by={by}&ed={ed}&em={em}&ey={ey}")
         json_content_rates = rates_currencies_to_rub.json()
         df_rates_currency = pd.DataFrame(json_content_rates)
         # print([[df_rates_currency[currency_name[currency]]] for currency in df_contries_currency['Код']])
@@ -329,8 +359,10 @@ class MainPageForm(TemplateView):
     template_name = 'main_form.html'
 
     def main_form(request):
-
-        country_currencies = requests.get("http://127.0.0.1:8000/api/GET/country-currency/")
+        '''
+        Определяет форму, которая принимает страны и интервал дат, а зате отправляет запрос на get_countries_rates
+        '''
+        country_currencies = requests.get(f"http://{ALLOWED_HOSTS[0]}:8000/api/GET/country-currency/")
         json_content_countries = country_currencies.json()
         df_contries_currency = pd.DataFrame(json_content_countries)
         all_countries = df_contries_currency['Страна'].to_list()
