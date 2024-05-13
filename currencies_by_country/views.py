@@ -16,9 +16,6 @@ from matplotlib.dates import DayLocator
 import matplotlib
 matplotlib.use('Agg')
 
-# https://www.finmarket.ru/currency/rates/?id=10148&pv=1&cur=52170&bd=1&bm=2&by=2022&ed=1&em=2&ey=2024&x=48&y=13#archive Евро
-# https://www.finmarket.ru/currency/rates/?id=10148&pv=1&cur=52148&bd=1&bm=2&by=2022&ed=1&em=2&ey=2024&x=56&y=10#archive Доллар
-
 class DateValidation:
     tz = pytz.timezone('Europe/Moscow')
 
@@ -207,7 +204,6 @@ class GetterCurrencies:
             course_data = dict()
             course_data['EUR'] = dict()
 
-            # current_course = soup.find_all("tr")
             current_course = list(
                 map(
                     lambda x: x.find_all('td'), 
@@ -225,14 +221,13 @@ class GetterCurrencies:
 
         df = pd.DataFrame(course_to_rub)
 
-        # Преобразуем столбец даты в формат даты и времени с помощью параметра format
+        # Преобразуем столбец даты в формат даты и времени
         df['Дата'] = pd.to_datetime(df['Дата'], format='%d.%m.%Y')
 
-        # Форматируем столбец даты в формат YYYY-MM-DD с помощью метода dt.strftime()
+        # Форматируем столбец даты в формат YYYY-MM-DD
         df['Дата'] = df['Дата'].dt.strftime('%Y-%m-%d')
 
         # Сохранение полученных данных в базу данных
-        # Пример использования модели CurrencyRates:
         try:
             for id, row in df.iterrows():
                 rates_obj, created = CurrencyRates.objects.update_or_create(
@@ -281,7 +276,7 @@ class GetterCurrencies:
                                       ed, em, ey)
 
         selected_countries = request.POST.getlist('countries')
-        # Теперь selected_countries содержит список выбранных стран
+        # selected_countries содержит список выбранных стран
 
         country_currencies = requests.get(f"http://{ALLOWED_HOSTS[0]}:8000/api/GET/country-currency/")
         json_content_countries = country_currencies.json()
@@ -293,7 +288,6 @@ class GetterCurrencies:
         rates_currencies_to_rub = requests.get(f"http://{ALLOWED_HOSTS[0]}:8000/api/GET/currency-rates/?bd={bd}&bm={bm}&by={by}&ed={ed}&em={em}&ey={ey}")
         json_content_rates = rates_currencies_to_rub.json()
         df_rates_currency = pd.DataFrame(json_content_rates)
-        # print([[df_rates_currency[currency_name[currency]]] for currency in df_contries_currency['Код']])
 
         # Создадим подграфики для каждой страны
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -340,7 +334,8 @@ class GetterCurrencies:
         # Поворачиваем даты на оси x для лучшей читаемости
         plt.xticks(rotation=90)
         ax.xaxis.set_major_locator(DayLocator(interval=10)) 
-        # Сохраняем график в формате JPG
+
+        # Сохраняем график 
         plt.tight_layout()
         plt.grid(visible=True)
 
@@ -370,3 +365,4 @@ class MainPageForm(TemplateView):
         return render(request, 
                       'main_form.html', 
                       context={'countries': all_countries})
+    

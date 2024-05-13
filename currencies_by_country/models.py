@@ -35,7 +35,7 @@ class CurrencyRates(models.Model):
         '''
         base_rates = CurrencyRates.objects.filter(date=base_date).first()
         if not base_rates:
-            return  # Handle the case when base rates are not available
+            return 
         
         currencies = ['usd_currency', 'eur_currency', 'gpb_currency', 'ikr_currency', 'cny_currency', 'try_currency', 'jpy_currency']
         queryset = self.objects.all()
@@ -66,3 +66,4 @@ class CurrencyRateChange(models.Model):
 
     def __str__(self):
         return f'{self.currency} - {self.date}'
+    
