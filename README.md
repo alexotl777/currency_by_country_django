@@ -4,8 +4,11 @@
 
 Чтобы запустить веб-приложение, нужно:
 1. Открыть терминал в корневой папке проекта, где лежит _manage.py_, например, _currencies/_
-2. Вписать команду `python manage.py runserver` или  `python3 manage.py runserver`
-3. Открыть браузер с хостом и портом: ***https://127.0.0.1:8000***
+2. Создать виртуальное окружение `python -m venv venv`
+3. Активировать виртуальное окружение `venv/Scripts/acivate`
+4. Скачать необходимые библиотеки из _requirements.txt_ командой `pip install -r "requirements.txt"`
+5. Вписать команду `python manage.py runserver` или  `python3 manage.py runserver`
+6. Открыть браузер с хостом и портом: ***https://127.0.0.1:8000***
 
 Также можно попробовать веб-прилложение на *https://alexotl777.pythonanywhere.com
 
