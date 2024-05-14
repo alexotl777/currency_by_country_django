@@ -94,7 +94,7 @@ class GetterCurrencies:
         return redirect("main/")
     
 
-    def get_currency_of_country(request) -> pd.DataFrame:
+    def get_currency_of_country(request) -> JsonResponse:
         '''
         Собирает с iban.ru информацию о кодах валют стран 
         и синхранизирует их в БД в таблице CountryCodes
@@ -144,7 +144,7 @@ class GetterCurrencies:
 
         return JsonResponse(dict_country_currency)
     
-    def get_rates(request):
+    def get_rates(request) -> JsonResponse:
         '''
         Собирает с finmarket.ru информацию о курсах валют 
         и синхранизирует их в БД в таблице CountryCodes
@@ -355,7 +355,7 @@ class MainPageForm(TemplateView):
 
     def main_form(request):
         '''
-        Определяет форму, которая принимает страны и интервал дат, а зате отправляет запрос на get_countries_rates
+        Определяет форму, которая принимает страны и интервал дат, а затем отправляет запрос на get_countries_rates
         '''
         country_currencies = requests.get(f"http://{ALLOWED_HOSTS[0]}:8000/api/GET/country-currency/")
         json_content_countries = country_currencies.json()
