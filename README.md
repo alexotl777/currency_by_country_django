@@ -10,8 +10,6 @@
 5. Вписать команду `python manage.py runserver` или  `python3 manage.py runserver`
 6. Открыть браузер с хостом и портом: ***https://127.0.0.1:8000***
 
-Также можно попробовать веб-прилложение на *https://alexotl777.pythonanywhere.com
-
 ## Методы Views
 
 Находятся в `currencies_by_country/views.py`
@@ -103,3 +101,14 @@ _ed, em, ey - конечные день, месяц и год соответсв
 Чтобы запустить веб-приложение, нужно:
 1. Открыть терминал в корневой папке проекта, где лежит _manage.py_, например, _currencies/_
 2. Вписать команду `python manage.py test` или  `python3 manage.py test`
+
+
+## Интерфейс
+
+1. 
+
+![form](image.png)
+
+2. 
+
+![graph](image-1.png)
